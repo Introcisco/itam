@@ -1,16 +1,162 @@
-# React + Vite
+# ITAM — IT 资产管理系统
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+基于 React + Vite 构建的轻量级 IT 资产全生命周期管理工具，数据存储在浏览器本地（IndexedDB），无需后端服务，开箱即用。
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 功能模块
 
-## React Compiler
+### 📊 仪表板（概览）
+- 资产总数、在用、库存、维修中、已报废数量统计
+- 资产总价值及在用资产价值
+- 状态分布 / 分类分布饼图
+- **保修即将到期预警**（90 天内）
+- 近期操作动态时间线
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 📋 资产管理
+- 资产列表，支持**多维筛选**（分类、品牌、状态、位置、所属公司、采购年月）
+- 关键字搜索（名称、编码、使用人、存货号、品牌、位置）
+- 列表排序（点击表头）
+- **导出 Excel**：将当前筛选结果导出
+- **批量导入**：通过 Excel 模板批量入库（见下文）
+- 单条**新增资产**入库
 
-## Expanding the ESLint configuration
+### 🔍 资产详情
+每条资产包含四个 Tab：
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+| Tab | 内容 |
+|-----|------|
+| 基本信息 | 分类/品牌/型号/配置、采购信息、使用信息、报废信息 |
+| 操作记录 | 全量审计日志时间线 |
+| 流转记录 | 领用/归还/调拨/送修/修复/报废记录表 |
+| 维修记录 | 维修工单（描述/费用/服务商/起止日期/状态） |
+
+**资产状态流转（操作按钮随状态自动变化）：**
+
+```
+库存 ──领用──▶ 在用 ──归还──▶ 库存
+              ├──调拨──▶ 在用（新使用人）
+              └──送修──▶ 维修中 ──完成维修──▶ 在用/库存（自动恢复）
+任意状态（非报废）──报废──▶ 已报废
+```
+
+### 📥 Excel 批量导入
+1. 点击资产管理页右上角 **「导入」** 按钮
+2. 点击 **「下载模板」** 获取标准 Excel 模板（含所有字段说明）
+3. 按模板填写数据后上传，系统自动：
+   - 解析并校验每行数据（必填项、格式、枚举值）
+   - 预览可导入行数 / 错误行数及详细错误信息
+   - 跳过资产编码重复的行
+4. 确认后批量写入数据库
+
+**模板字段说明：**
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| 资产编码 | ✅ | 8 位纯数字，全局唯一 |
+| 资产名称 | ✅ | — |
+| 资产分类 | ✅ | 见下方枚举值 |
+| 品牌 | ✅ | 见下方枚举值 |
+| 所属公司 | ✅ | 见下方枚举值 |
+| 型号 | — | 选填 |
+| 存货号 | — | 选填 |
+| 状态 | — | 库存 / 在用 / 维修中 / 已报废（默认：库存）|
+| 存放位置 | — | 选填 |
+| 使用人 | — | 选填 |
+| 采购日期 | — | 格式：YYYY-MM-DD |
+| 采购价格 | — | 数字，单位元 |
+| 保修截止 | — | 格式：YYYY-MM-DD |
+| 供应商 | — | 选填 |
+| 配置明细 | — | 选填 |
+| 备注 | — | 选填 |
+
+### 🔧 维修管理
+- 汇总所有资产的维修工单列表
+- 显示设备名称、故障描述、服务商、费用、状态
+
+### 🗑️ 报废管理
+- 所有已报废资产的列表
+- 显示报废日期、原因、审批人
+
+### 📜 审计日志
+- 全系统操作日志（入库、领用、归还、调拨、送修、修复、报废、批量导入等）
+- 支持按关键字搜索
+
+### 📈 报表统计
+- 按分类、品牌、状态的资产分布统计
+- 资产价值汇总
+
+---
+
+## 资产枚举参考
+
+**资产分类：** 笔记本电脑 / 台式电脑 / 服务器 / 显示器 / 打印机 / 网络设备 / 移动设备 / 外设配件 / 软件许可 / 其他
+
+**品牌：** 联想 / 华为 / ThinkPad / 苹果 / 戴尔 / 惠普 / AOC / 其它
+
+**所属公司：**
+- 飞亚达精密科技股份有限公司
+- 飞亚达销售有限公司
+- 深圳市飞亚达精密科技有限公司
+- 深圳市亨吉利世界名表中心有限公司
+- 深圳市飞亚达科技发展有限公司
+- 艾米龙时计（深圳）有限公司
+
+---
+
+## 技术栈
+
+| 技术 | 用途 |
+|------|------|
+| React 19 + Vite | 前端框架与构建工具 |
+| React Router v7 | 客户端路由 |
+| Dexie.js (IndexedDB) | 本地数据库，数据持久化 |
+| xlsx | Excel 导入 / 导出 |
+| Recharts | 图表（饼图） |
+| lucide-react | 图标库 |
+
+> **数据存储说明：** 所有数据保存在浏览器 IndexedDB 中，清除浏览器数据会导致数据丢失。建议定期通过「导出 Excel」功能备份数据。
+
+---
+
+## 本地开发
+
+```bash
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+
+# 构建生产包
+npm run build
+
+# 预览生产包
+npm run preview
+```
+
+首次启动会自动写入一批演示数据（seed data），可直接体验各项功能。
+
+---
+
+## 目录结构
+
+```
+src/
+├── components/
+│   ├── Layout.jsx        # 侧边栏 + 主布局
+│   └── ImportModal.jsx   # 批量导入弹窗
+├── pages/
+│   ├── Dashboard.jsx     # 仪表板
+│   ├── AssetList.jsx     # 资产列表
+│   ├── AssetDetail.jsx   # 资产详情 + 操作
+│   ├── AssetForm.jsx     # 新增 / 编辑资产表单
+│   ├── MaintenanceList.jsx  # 维修管理
+│   ├── DisposalList.jsx  # 报废管理
+│   ├── AuditLog.jsx      # 审计日志
+│   └── Reports.jsx       # 报表统计
+├── db/
+│   ├── database.js       # Dexie 数据库定义 + 常量
+│   └── seedData.js       # 演示数据
+└── index.css             # 全局样式
+```
