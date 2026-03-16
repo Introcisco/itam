@@ -1,5 +1,6 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, ASSET_CATEGORIES } from '../db/database';
+import { useState, useEffect } from 'react';
+import { ASSET_CATEGORIES } from '../db/database';
+import { api } from '../api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { BarChart3, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -12,8 +13,13 @@ const tooltipStyle = {
 };
 
 export default function Reports() {
-    const assets = useLiveQuery(() => db.assets.toArray()) || [];
-    const transfers = useLiveQuery(() => db.transfers.toArray()) || [];
+    const [assets, setAssets] = useState([]);
+    const [transfers, setTransfers] = useState([]);
+
+    useEffect(() => {
+        api.getAssets().then(setAssets).catch(console.error);
+        api.getTransfers().then(setTransfers).catch(console.error);
+    }, []);
 
     // Category distribution
     const catData = ASSET_CATEGORIES.map(c => ({

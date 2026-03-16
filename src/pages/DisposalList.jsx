@@ -1,13 +1,17 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/database';
+import { useState, useEffect } from 'react';
+import { api } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 
 export default function DisposalList() {
     const navigate = useNavigate();
-    const disposedAssets = useLiveQuery(() =>
-        db.assets.where('status').equals('已报废').toArray()
-    ) || [];
+    const [disposedAssets, setDisposedAssets] = useState([]);
+
+    useEffect(() => {
+        api.getAssets()
+           .then(all => setDisposedAssets(all.filter(a => a.status === '已报废')))
+           .catch(console.error);
+    }, []);
 
     return (
         <div className="fade-in">

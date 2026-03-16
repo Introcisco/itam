@@ -1,12 +1,17 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/database';
+import { useState, useEffect } from 'react';
+import { api } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { Wrench } from 'lucide-react';
 
 export default function MaintenanceList() {
     const navigate = useNavigate();
-    const records = useLiveQuery(() => db.maintenance.toArray()) || [];
-    const assets = useLiveQuery(() => db.assets.toArray()) || [];
+    const [records, setRecords] = useState([]);
+    const [assets, setAssets] = useState([]);
+
+    useEffect(() => {
+        api.getMaintenances().then(setRecords).catch(console.error);
+        api.getAssets().then(setAssets).catch(console.error);
+    }, []);
 
     const assetMap = {};
     assets.forEach(a => { assetMap[a.id] = a; });

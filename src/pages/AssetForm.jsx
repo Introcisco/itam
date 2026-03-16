@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, ASSET_CATEGORIES, ASSET_BRANDS, ASSET_COMPANIES, addAuditLog } from '../db/database';
+import { api } from '../api';
+import { ASSET_CATEGORIES, ASSET_BRANDS, ASSET_COMPANIES, addAuditLog } from '../db/database';
 import { useToast } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -21,7 +21,12 @@ export default function AssetForm() {
         }
     }, [currentUser, navigate]);
 
-    const existing = useLiveQuery(() => id ? db.assets.get(Number(id)) : null, [id]);
+    const [existing, setExisting] = useState(null);
+    useEffect(() => {
+        if (id) {
+            api.getAsset(id).then(setExisting).catch(() => setExisting(null));
+        }
+    }, [id]);
 
     const [form, setForm] = useState({
         assetCode: '', name: '', category: '笔记本电脑', brand: '', model: '',
@@ -63,12 +68,13 @@ export default function AssetForm() {
         };
 
         if (isEdit) {
-            await db.assets.update(Number(id), data);
+            await api.updateAsset(Number(id), data);
             await addAuditLog(Number(id), '编辑', `编辑了资产信息: ${data.name}`, operatorName);
             toast('资产信息已更新');
             navigate(`/assets/${id}`);
         } else {
-            const newId = await db.assets.add(data);
+            const result = await api.createAsset(data);
+            const newId = result.id;
             await addAuditLog(newId, '入库', `新资产入库: ${data.name}，编码: ${data.assetCode}`, operatorName);
             toast('资产入库成功');
             navigate(`/assets/${newId}`);

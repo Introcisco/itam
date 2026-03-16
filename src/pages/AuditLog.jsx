@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/database';
+import { useState, useEffect } from 'react';
+import { api } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { ClipboardList, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -12,8 +11,13 @@ export default function AuditLog() {
     const [actionFilter, setActionFilter] = useState('');
     const [page, setPage] = useState(1);
 
-    const allLogs = useLiveQuery(() => db.auditLogs.orderBy('timestamp').reverse().toArray()) || [];
-    const assets = useLiveQuery(() => db.assets.toArray()) || [];
+    const [allLogs, setAllLogs] = useState([]);
+    const [assets, setAssets] = useState([]);
+
+    useEffect(() => {
+        api.getAuditLogs().then(setAllLogs).catch(console.error);
+        api.getAssets().then(setAssets).catch(console.error);
+    }, []);
 
     const assetMap = {};
     assets.forEach(a => { assetMap[a.id] = a; });

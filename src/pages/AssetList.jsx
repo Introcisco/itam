@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, ASSET_CATEGORIES, ASSET_BRANDS, ASSET_COMPANIES } from '../db/database';
+import { useState, useMemo, useEffect } from 'react';
+import { api } from '../api';
+import { ASSET_CATEGORIES, ASSET_BRANDS, ASSET_COMPANIES } from '../db/database';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Download, Upload, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -87,7 +87,11 @@ export default function AssetList() {
     const [sortField, setSortField] = useState('id');
     const [sortDir, setSortDir] = useState('desc');
 
-    const allAssets = useLiveQuery(() => db.assets.toArray()) || [];
+    const [allAssets, setAllAssets] = useState([]);
+
+    useEffect(() => {
+        api.getAssets().then(setAllAssets).catch(console.error);
+    }, []);
 
     const locations = useMemo(() =>
         [...new Set(allAssets.map(a => a.location).filter(Boolean))].sort(),

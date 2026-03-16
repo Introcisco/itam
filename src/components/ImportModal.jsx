@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { db, ASSET_CATEGORIES, ASSET_BRANDS, ASSET_COMPANIES, addAuditLog } from '../db/database';
+import { ASSET_CATEGORIES, ASSET_BRANDS, ASSET_COMPANIES, addAuditLog } from '../db/database';
+import { api } from '../api';
 import { Upload, Download, X, FileSpreadsheet, AlertCircle, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 // ── Field definitions ──────────────────────────────────────────────────────────
@@ -224,7 +225,7 @@ export default function ImportModal({ onClose, onSuccess }) {
 
         // Pre-fetch existing asset codes to detect duplicates
         const existingCodes = new Set(
-            (await db.assets.toArray()).map(a => a.assetCode)
+            (await api.getAssets()).map(a => a.assetCode)
         );
 
         for (const { data } of validRows) {
@@ -253,7 +254,8 @@ export default function ImportModal({ onClose, onSuccess }) {
                     notes: data.notes || '',
                     createdAt: new Date().toISOString(),
                 };
-                const newId = await db.assets.add(record);
+                const result = await api.createAsset(record);
+                const newId = result.id;
                 await addAuditLog(newId, '批量导入', `批量导入资产: ${record.name}，编码: ${record.assetCode}`);
                 existingCodes.add(data.assetCode);
                 successCount++;

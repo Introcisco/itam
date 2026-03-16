@@ -1,5 +1,5 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/database';
+import { useState, useEffect } from 'react';
+import { api } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Monitor, Package, Wrench, Trash2, AlertTriangle, ArrowRight, TrendingUp } from 'lucide-react';
@@ -13,10 +13,13 @@ const STATUS_COLORS = {
 
 export default function Dashboard() {
     const navigate = useNavigate();
-    const assets = useLiveQuery(() => db.assets.toArray()) || [];
-    const recentLogs = useLiveQuery(() =>
-        db.auditLogs.orderBy('timestamp').reverse().limit(8).toArray()
-    ) || [];
+    const [assets, setAssets] = useState([]);
+    const [recentLogs, setRecentLogs] = useState([]);
+
+    useEffect(() => {
+        api.getAssets().then(setAssets).catch(console.error);
+        api.getAuditLogs().then(logs => setRecentLogs(logs.slice(0, 8))).catch(console.error);
+    }, []);
 
     const inUse = assets.filter(a => a.status === '在用').length;
     const inStock = assets.filter(a => a.status === '库存').length;

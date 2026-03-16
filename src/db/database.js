@@ -1,13 +1,4 @@
-import Dexie from 'dexie';
-
-export const db = new Dexie('ITAM_Database');
-
-db.version(1).stores({
-    assets: '++id, assetCode, name, category, brand, model, serialNumber, status, location, assignee, purchaseDate, supplier',
-    transfers: '++id, assetId, type, fromUser, toUser, date, operator',
-    maintenance: '++id, assetId, type, status, startDate, vendor',
-    auditLogs: '++id, assetId, action, operator, timestamp',
-});
+import { api } from '../api';
 
 // Asset statuses
 export const ASSET_STATUS = {
@@ -86,11 +77,11 @@ export function generateAssetCode(category) {
 
 // Add audit log helper
 export async function addAuditLog(assetId, action, details, operator = '系统管理员') {
-    await db.auditLogs.add({
+    await api.createAuditLog({
         assetId,
         action,
         details,
         operator,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
     });
 }

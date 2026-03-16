@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, addAuditLog } from '../db/database';
+import { api } from '../api';
+import { addAuditLog } from '../db/database';
 import { useToast } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Edit, UserPlus, RotateCcw, Wrench as WrenchIcon, Trash2, ArrowRightLeft, CheckCircle } from 'lucide-react';
@@ -17,50 +17,64 @@ export default function AssetDetail() {
     const [modal, setModal] = useState(null);
     const [formData, setFormData] = useState({});
 
-    const asset = useLiveQuery(() => db.assets.get(Number(id)), [id]);
-    const transfers = useLiveQuery(() => db.transfers.where('assetId').equals(Number(id)).toArray(), [id]) || [];
-    const maintenance = useLiveQuery(() => db.maintenance.where('assetId').equals(Number(id)).toArray(), [id]) || [];
-    const logs = useLiveQuery(() => db.auditLogs.where('assetId').equals(Number(id)).reverse().sortBy('timestamp'), [id]) || [];
+    const [asset, setAsset] = useState(null);
+    const [transfers, setTransfers] = useState([]);
+    const [maintenance, setMaintenance] = useState([]);
+    const [logs, setLogs] = useState([]);
+    const [refresh, setRefresh] = useState(0);
+
+    useEffect(() => {
+        api.getAsset(id).then(setAsset).catch(() => setAsset(null));
+        api.getTransfers().then(all => setTransfers(all.filter(t => t.assetId === Number(id)))).catch(console.error);
+        api.getMaintenances().then(all => setMaintenance(all.filter(m => m.assetId === Number(id)))).catch(console.error);
+        api.getAuditLogsByAsset(id).then(setLogs).catch(console.error);
+    }, [id, refresh]);
+
+    const triggerRefresh = () => setRefresh(r => r + 1);
 
     if (!asset) return <div className="empty-state"><p>加载中...</p></div>;
 
     const handleAssign = async () => {
         if (!formData.toUser || !formData.toLocation) return;
-        await db.assets.update(asset.id, { status: '在用', assignee: formData.toUser, location: formData.toLocation });
-        await db.transfers.add({ assetId: asset.id, type: '领用', fromUser: '', toUser: formData.toUser, fromLocation: asset.location, toLocation: formData.toLocation, date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.notes || '' });
+        await api.updateAsset(asset.id, { status: '在用', assignee: formData.toUser, location: formData.toLocation });
+        await api.createTransfer({ assetId: asset.id, type: '领用', fromUser: '', toUser: formData.toUser, fromLocation: asset.location, toLocation: formData.toLocation, date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.notes || '' });
         await addAuditLog(asset.id, '领用', `领用给${formData.toUser}，位置：${formData.toLocation}`, operatorName);
         toast('领用成功');
         setModal(null);
         setFormData({});
+        triggerRefresh();
     };
 
     const handleReturn = async () => {
-        await db.assets.update(asset.id, { status: '库存', assignee: '', location: formData.toLocation || '总部-1F-IT仓库' });
-        await db.transfers.add({ assetId: asset.id, type: '归还', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: formData.toLocation || '总部-1F-IT仓库', date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.notes || '' });
+        await api.updateAsset(asset.id, { status: '库存', assignee: '', location: formData.toLocation || '总部-1F-IT仓库' });
+        await api.createTransfer({ assetId: asset.id, type: '归还', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: formData.toLocation || '总部-1F-IT仓库', date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.notes || '' });
         await addAuditLog(asset.id, '归还', `${asset.assignee}归还，存放：${formData.toLocation || '总部-1F-IT仓库'}`, operatorName);
         toast('归还成功');
         setModal(null);
         setFormData({});
+        triggerRefresh();
     };
 
     const handleRepair = async () => {
-        await db.assets.update(asset.id, { status: '维修中', location: formData.toLocation || '总部-1F-IT维修区' });
-        await db.maintenance.add({ assetId: asset.id, type: '维修', description: formData.description || '', cost: 0, startDate: new Date().toISOString().slice(0, 10), endDate: '', vendor: formData.vendor || '', status: '进行中' });
-        await db.transfers.add({ assetId: asset.id, type: '送修', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: formData.toLocation || '总部-1F-IT维修区', date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.description || '' });
+        await api.updateAsset(asset.id, { status: '维修中', location: formData.toLocation || '总部-1F-IT维修区' });
+        await api.createMaintenance({ assetId: asset.id, type: '维修', description: formData.description || '', cost: 0, startDate: new Date().toISOString().slice(0, 10), endDate: '', vendor: formData.vendor || '', status: '进行中' });
+        await api.createTransfer({ assetId: asset.id, type: '送修', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: formData.toLocation || '总部-1F-IT维修区', date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.description || '' });
         await addAuditLog(asset.id, '送修', formData.description || '送修', operatorName);
         toast('已标记为维修中');
         setModal(null);
         setFormData({});
+        triggerRefresh();
     };
 
     const handleTransfer = async () => {
         if (!formData.toUser || !formData.toLocation) return;
-        await db.assets.update(asset.id, { assignee: formData.toUser, location: formData.toLocation });
-        await db.transfers.add({ assetId: asset.id, type: '调拨', fromUser: asset.assignee, toUser: formData.toUser, fromLocation: asset.location, toLocation: formData.toLocation, date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.notes || '' });
+        await api.updateAsset(asset.id, { assignee: formData.toUser, location: formData.toLocation });
+        await api.createTransfer({ assetId: asset.id, type: '调拨', fromUser: asset.assignee, toUser: formData.toUser, fromLocation: asset.location, toLocation: formData.toLocation, date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.notes || '' });
         await addAuditLog(asset.id, '调拨', `从${asset.assignee}调拨至${formData.toUser}，${formData.toLocation}`, operatorName);
         toast('调拨成功');
         setModal(null);
         setFormData({});
+        triggerRefresh();
     };
 
     const handleRepairDone = async () => {
@@ -74,7 +88,7 @@ export default function AssetDetail() {
         const restoreAssignee = lastRepair?.fromUser || '';
 
         // Update asset back to pre-repair state
-        await db.assets.update(asset.id, {
+        await api.updateAsset(asset.id, {
             status: restoreStatus,
             location: restoreLocation,
             assignee: restoreAssignee,
@@ -85,7 +99,7 @@ export default function AssetDetail() {
             .sort((a, b) => (b.startDate > a.startDate ? 1 : -1))
             .find(m => m.status === '进行中');
         if (activeMaint) {
-            await db.maintenance.update(activeMaint.id, {
+            await api.updateMaintenance(activeMaint.id, {
                 status: '已完成',
                 endDate: new Date().toISOString().slice(0, 10),
                 cost: Number(formData.cost) || 0,
@@ -94,7 +108,7 @@ export default function AssetDetail() {
         }
 
         // Transfer record
-        await db.transfers.add({
+        await api.createTransfer({
             assetId: asset.id,
             type: '修复',
             fromUser: '',
@@ -115,15 +129,17 @@ export default function AssetDetail() {
         toast('维修完成，资产已恢复');
         setModal(null);
         setFormData({});
+        triggerRefresh();
     };
 
     const handleDispose = async () => {
-        await db.assets.update(asset.id, { status: '已报废', assignee: '', location: '报废仓库', disposalDate: new Date().toISOString().slice(0, 10), disposalReason: formData.reason || '', disposalApprover: operatorName });
-        await db.transfers.add({ assetId: asset.id, type: '报废', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: '报废仓库', date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.reason || '' });
+        await api.updateAsset(asset.id, { status: '已报废', assignee: '', location: '报废仓库', disposalDate: new Date().toISOString().slice(0, 10), disposalReason: formData.reason || '', disposalApprover: operatorName });
+        await api.createTransfer({ assetId: asset.id, type: '报废', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: '报废仓库', date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.reason || '' });
         await addAuditLog(asset.id, '报废', `报废原因：${formData.reason || '无'}`, operatorName);
         toast('已报废处理', 'warning');
         setModal(null);
         setFormData({});
+        triggerRefresh();
     };
 
     const actionButtons = [];
