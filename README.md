@@ -1,6 +1,6 @@
 # ITAM — IT 资产管理系统
 
-基于 React + Vite 构建的轻量级 IT 资产全生命周期管理工具，数据存储在浏览器本地（IndexedDB），无需后端服务，开箱即用。
+基于 React + Vite (前端) 和 Node.js + Express + MySQL (后端) 构建的轻量级 IT 资产全生命周期管理工具。
 
 ---
 
@@ -33,7 +33,7 @@
 
 **资产状态流转（操作按钮随状态自动变化）：**
 
-```
+```text
 库存 ──领用──▶ 在用 ──归还──▶ 库存
               ├──调拨──▶ 在用（新使用人）
               └──送修──▶ 维修中 ──完成维修──▶ 在用/库存（自动恢复）
@@ -47,7 +47,7 @@
    - 解析并校验每行数据（必填项、格式、枚举值）
    - 预览可导入行数 / 错误行数及详细错误信息
    - 跳过资产编码重复的行
-4. 确认后批量写入数据库
+4. 确认后批量通过接口写入数据库
 
 **模板字段说明：**
 
@@ -106,57 +106,96 @@
 
 ## 技术栈
 
-| 技术 | 用途 |
-|------|------|
-| React 19 + Vite | 前端框架与构建工具 |
-| React Router v7 | 客户端路由 |
-| Dexie.js (IndexedDB) | 本地数据库，数据持久化 |
-| xlsx | Excel 导入 / 导出 |
-| Recharts | 图表（饼图） |
-| lucide-react | 图标库 |
-
-> **数据存储说明：** 所有数据保存在浏览器 IndexedDB 中，清除浏览器数据会导致数据丢失。建议定期通过「导出 Excel」功能备份数据。
+| 模块 | 技术 | 用途 |
+|------|------|------|
+| 前端 | React 19 + Vite + React Router | 前端 UI 框架、构建工具与客户端路由 |
+| | xlsx | Excel 导入 / 导出 |
+| | Recharts | 数据图表可视化 |
+| | lucide-react | 项目图标库 |
+| 后端 | Node.js + Express | RESTful API 服务器 |
+| | mysql2 | MySQL 数据库连接与查询处理 |
+| | dotenv | 后端环境变量管理 |
+| | cors | 跨域请求处理 |
+| 数据库 | MySQL | 核心业务数据与审计日志持久化存储 |
 
 ---
 
-## 本地开发
+## 本地开发部署
 
+### 1. 数据库准备
+确保本地或服务器已安装 MySQL 数据库。系统（后端启动时）将自动检查并创建 `itam_db` 数据库与所需的数据表，无需手动执行 SQL 建表脚本。
+
+### 2. 后端服务 (Node.js API)
 ```bash
+cd server
+
 # 安装依赖
 npm install
 
-# 启动开发服务器
-npm run dev
+# 配置环境变量
+# 在 server 目录创建或修改 .env 文件，修改你的 MySQL 账号信息
+# .env 示例:
+# DB_HOST=127.0.0.1
+# DB_USER=root
+# DB_PASSWORD=your_password
+# DB_NAME=itam_db
+# PORT=3001
 
-# 构建生产包
-npm run build
-
-# 预览生产包
-npm run preview
+# 启动后端开发服务器
+npm run start
+# 或直接运行
+# node server.js
 ```
 
-首次启动会自动写入一批演示数据（seed data），可直接体验各项功能。
+### 3. 前端界面 (React)
+重新打开一个终端窗口：
+```bash
+# 返回到项目根目录
+cd ..
+
+# 安装依赖
+npm install
+
+# 确保 src/api.js 内的 API_BASE_URL 指向后端接口，开发环境下默认：
+# const API_BASE_URL = 'http://localhost:3001/api';
+
+# 启动前端开发服务器
+npm run dev
+```
+
+### 4. 生产环境服务器部署
+需要将项目部署在服务器环境时，请参阅项目根目录下的 [DEPLOYMENT.md](./DEPLOYMENT.md) 指南进行详细的 Nginx 和 PM2 配置。
 
 ---
 
 ## 目录结构
 
-```
-src/
-├── components/
-│   ├── Layout.jsx        # 侧边栏 + 主布局
-│   └── ImportModal.jsx   # 批量导入弹窗
-├── pages/
-│   ├── Dashboard.jsx     # 仪表板
-│   ├── AssetList.jsx     # 资产列表
-│   ├── AssetDetail.jsx   # 资产详情 + 操作
-│   ├── AssetForm.jsx     # 新增 / 编辑资产表单
-│   ├── MaintenanceList.jsx  # 维修管理
-│   ├── DisposalList.jsx  # 报废管理
-│   ├── AuditLog.jsx      # 审计日志
-│   └── Reports.jsx       # 报表统计
-├── db/
-│   ├── database.js       # Dexie 数据库定义 + 常量
-│   └── seedData.js       # 演示数据
-└── index.css             # 全局样式
+```text
+/
+├── server/                 # 后端服务
+│   ├── .env                # 数据库与服务环境变量配置
+│   ├── db.js               # MySQL 连接池与表结构初始化建表控制
+│   ├── package.json
+│   └── server.js           # Express 服务器和 RESTful API 路由实现
+├── src/                    # 前端源码
+│   ├── api.js              # 统一封装的后端 API 请求服务
+│   ├── components/
+│   │   ├── Layout.jsx        # 侧边栏 + 主布局
+│   │   └── ImportModal.jsx   # 批量导入弹窗
+│   ├── pages/
+│   │   ├── Dashboard.jsx     # 仪表板
+│   │   ├── AssetList.jsx     # 资产列表
+│   │   ├── AssetDetail.jsx   # 资产详情 + 操作状态机
+│   │   ├── AssetForm.jsx     # 新增 / 编辑资产表单
+│   │   ├── MaintenanceList.jsx
+│   │   ├── DisposalList.jsx
+│   │   ├── AuditLog.jsx
+│   │   └── Reports.jsx
+│   ├── db/
+│   │   └── database.js       # 前端枚举常量字典定义 (由原 Dexie 配置退化而来)
+│   ├── App.jsx             # 前端路由和全局提示入口
+│   ├── main.jsx            # React 挂载点
+│   └── index.css           # 全局样式
+├── DEPLOYMENT.md           # 生产环境服务器部署指南
+└── README.md
 ```
