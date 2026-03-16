@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Download, Upload, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ImportModal from '../components/ImportModal';
+import { useAuth } from '../context/AuthContext';
 
 const PAGE_SIZE = 15;
 
@@ -69,6 +70,8 @@ function DateFilterChip({ year, month, onYearChange, onMonthChange, years, month
 
 export default function AssetList() {
     const navigate = useNavigate();
+    const { currentUser } = useAuth();
+    const isAdmin = currentUser?.role === 'admin';
     const [search, setSearch] = useState('');
     const [showImport, setShowImport] = useState(false);
     const [filters, setFilters] = useState({
@@ -184,17 +187,19 @@ export default function AssetList() {
                         <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 4 }}>资产管理</h1>
                         <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>共 {filtered.length} 项资产</p>
                     </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn btn-secondary" onClick={() => setShowImport(true)}>
-                            <Upload size={14} /> 导入
-                        </button>
-                        <button className="btn btn-secondary" onClick={handleExport}>
-                            <Download size={14} /> 导出 Excel
-                        </button>
-                        <button className="btn btn-primary" onClick={() => navigate('/assets/new')}>
-                            <Plus size={14} /> 新增资产
-                        </button>
-                    </div>
+                    {isAdmin && (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button className="btn btn-secondary" onClick={() => setShowImport(true)}>
+                                <Upload size={14} /> 导入
+                            </button>
+                            <button className="btn btn-secondary" onClick={handleExport}>
+                                <Download size={14} /> 导出 Excel
+                            </button>
+                            <button className="btn btn-primary" onClick={() => navigate('/assets/new')}>
+                                <Plus size={14} /> 新增资产
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Filter Toolbar ── */}

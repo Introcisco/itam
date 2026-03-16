@@ -3,13 +3,23 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, ASSET_CATEGORIES, ASSET_BRANDS, ASSET_COMPANIES, addAuditLog } from '../db/database';
 import { useToast } from '../App';
+import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Save } from 'lucide-react';
 
 export default function AssetForm() {
     const { id } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
+    const { currentUser } = useAuth();
+    const operatorName = currentUser?.displayName || '系统管理员';
     const isEdit = !!id;
+
+    // Redirect non-admin users
+    useEffect(() => {
+        if (currentUser && currentUser.role !== 'admin') {
+            navigate('/assets', { replace: true });
+        }
+    }, [currentUser, navigate]);
 
     const existing = useLiveQuery(() => id ? db.assets.get(Number(id)) : null, [id]);
 
@@ -54,12 +64,12 @@ export default function AssetForm() {
 
         if (isEdit) {
             await db.assets.update(Number(id), data);
-            await addAuditLog(Number(id), '编辑', `编辑了资产信息: ${data.name}`);
+            await addAuditLog(Number(id), '编辑', `编辑了资产信息: ${data.name}`, operatorName);
             toast('资产信息已更新');
             navigate(`/assets/${id}`);
         } else {
             const newId = await db.assets.add(data);
-            await addAuditLog(newId, '入库', `新资产入库: ${data.name}，编码: ${data.assetCode}`);
+            await addAuditLog(newId, '入库', `新资产入库: ${data.name}，编码: ${data.assetCode}`, operatorName);
             toast('资产入库成功');
             navigate(`/assets/${newId}`);
         }

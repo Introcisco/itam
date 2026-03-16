@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     Monitor,
@@ -13,19 +13,26 @@ import {
     Moon,
     ChevronLeft,
     ChevronRight,
+    LogOut,
+    ShieldCheck,
+    User,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
-const navItems = [
-    { label: '概览', to: '/', icon: LayoutDashboard, end: true },
-    { label: '资产管理', to: '/assets', icon: Monitor, end: true },
-    { label: '资产入库', to: '/assets/new', icon: PackagePlus },
-    { label: '维修维护', to: '/maintenance', icon: Wrench },
-    { label: '报废管理', to: '/disposal', icon: Trash2 },
-    { label: '审计日志', to: '/audit', icon: ClipboardList },
-    { label: '报表统计', to: '/reports', icon: BarChart3 },
+const ALL_NAV_ITEMS = [
+    { label: '概览', to: '/', icon: LayoutDashboard, end: true, adminOnly: false },
+    { label: '资产管理', to: '/assets', icon: Monitor, end: true, adminOnly: false },
+    { label: '资产入库', to: '/assets/new', icon: PackagePlus, adminOnly: true },
+    { label: '维修维护', to: '/maintenance', icon: Wrench, adminOnly: false },
+    { label: '报废管理', to: '/disposal', icon: Trash2, adminOnly: false },
+    { label: '审计日志', to: '/audit', icon: ClipboardList, adminOnly: false },
+    { label: '报表统计', to: '/reports', icon: BarChart3, adminOnly: false },
 ];
 
 export default function Layout({ children }) {
+    const { currentUser, logout } = useAuth();
+    const navigate = useNavigate();
+
     const [theme, setTheme] = useState(() => {
         return localStorage.getItem('itam-theme') || 'dark';
     });
@@ -45,6 +52,16 @@ export default function Layout({ children }) {
     const toggleTheme = () => {
         setTheme(prev => prev === 'dark' ? 'light' : 'dark');
     };
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login', { replace: true });
+    };
+
+    const isAdmin = currentUser?.role === 'admin';
+
+    // Filter nav items based on role
+    const navItems = ALL_NAV_ITEMS.filter(item => !item.adminOnly || isAdmin);
 
     return (
         <div className="app-layout">
@@ -98,14 +115,37 @@ export default function Layout({ children }) {
                     ))}
                 </nav>
 
-                {/* Theme toggle — icon only */}
-                <button
-                    className="theme-toggle"
-                    onClick={toggleTheme}
-                    title={theme === 'dark' ? '切换至日间模式' : '切换至夜间模式'}
-                >
-                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                </button>
+                {/* User info + logout */}
+                <div className={`sidebar-user${collapsed ? ' sidebar-user--collapsed' : ''}`}>
+                    {!collapsed && (
+                        <div className="sidebar-user__info">
+                            <div className="sidebar-user__name">{currentUser?.displayName}</div>
+                            <div className={`sidebar-user__role ${isAdmin ? 'sidebar-user__role--admin' : 'sidebar-user__role--user'}`}>
+                                {isAdmin ? <ShieldCheck size={11} /> : <User size={11} />}
+                                {isAdmin ? '管理员' : '普通用户'}
+                            </div>
+                        </div>
+                    )}
+                    <div className="sidebar-user__actions">
+                        {/* Theme toggle */}
+                        <button
+                            className="theme-toggle"
+                            onClick={toggleTheme}
+                            title={theme === 'dark' ? '切换至日间模式' : '切换至夜间模式'}
+                        >
+                            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                        </button>
+                        {/* Logout */}
+                        <button
+                            className="theme-toggle"
+                            onClick={handleLogout}
+                            title="退出登录"
+                            style={{ color: 'var(--text-muted)' }}
+                        >
+                            <LogOut size={16} />
+                        </button>
+                    </div>
+                </div>
             </aside>
 
             <main className="main-content">

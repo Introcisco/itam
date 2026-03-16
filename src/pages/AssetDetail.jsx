@@ -3,12 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, addAuditLog } from '../db/database';
 import { useToast } from '../App';
+import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Edit, UserPlus, RotateCcw, Wrench as WrenchIcon, Trash2, ArrowRightLeft, CheckCircle } from 'lucide-react';
 
 export default function AssetDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
+    const { currentUser } = useAuth();
+    const isAdmin = currentUser?.role === 'admin';
+    const operatorName = currentUser?.displayName || '系统管理员';
     const [tab, setTab] = useState('info');
     const [modal, setModal] = useState(null);
     const [formData, setFormData] = useState({});
@@ -23,8 +27,8 @@ export default function AssetDetail() {
     const handleAssign = async () => {
         if (!formData.toUser || !formData.toLocation) return;
         await db.assets.update(asset.id, { status: '在用', assignee: formData.toUser, location: formData.toLocation });
-        await db.transfers.add({ assetId: asset.id, type: '领用', fromUser: '', toUser: formData.toUser, fromLocation: asset.location, toLocation: formData.toLocation, date: new Date().toISOString().slice(0, 10), operator: '系统管理员', notes: formData.notes || '' });
-        await addAuditLog(asset.id, '领用', `领用给${formData.toUser}，位置：${formData.toLocation}`);
+        await db.transfers.add({ assetId: asset.id, type: '领用', fromUser: '', toUser: formData.toUser, fromLocation: asset.location, toLocation: formData.toLocation, date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.notes || '' });
+        await addAuditLog(asset.id, '领用', `领用给${formData.toUser}，位置：${formData.toLocation}`, operatorName);
         toast('领用成功');
         setModal(null);
         setFormData({});
@@ -32,8 +36,8 @@ export default function AssetDetail() {
 
     const handleReturn = async () => {
         await db.assets.update(asset.id, { status: '库存', assignee: '', location: formData.toLocation || '总部-1F-IT仓库' });
-        await db.transfers.add({ assetId: asset.id, type: '归还', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: formData.toLocation || '总部-1F-IT仓库', date: new Date().toISOString().slice(0, 10), operator: '系统管理员', notes: formData.notes || '' });
-        await addAuditLog(asset.id, '归还', `${asset.assignee}归还，存放：${formData.toLocation || '总部-1F-IT仓库'}`);
+        await db.transfers.add({ assetId: asset.id, type: '归还', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: formData.toLocation || '总部-1F-IT仓库', date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.notes || '' });
+        await addAuditLog(asset.id, '归还', `${asset.assignee}归还，存放：${formData.toLocation || '总部-1F-IT仓库'}`, operatorName);
         toast('归还成功');
         setModal(null);
         setFormData({});
@@ -42,8 +46,8 @@ export default function AssetDetail() {
     const handleRepair = async () => {
         await db.assets.update(asset.id, { status: '维修中', location: formData.toLocation || '总部-1F-IT维修区' });
         await db.maintenance.add({ assetId: asset.id, type: '维修', description: formData.description || '', cost: 0, startDate: new Date().toISOString().slice(0, 10), endDate: '', vendor: formData.vendor || '', status: '进行中' });
-        await db.transfers.add({ assetId: asset.id, type: '送修', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: formData.toLocation || '总部-1F-IT维修区', date: new Date().toISOString().slice(0, 10), operator: '系统管理员', notes: formData.description || '' });
-        await addAuditLog(asset.id, '送修', formData.description || '送修');
+        await db.transfers.add({ assetId: asset.id, type: '送修', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: formData.toLocation || '总部-1F-IT维修区', date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.description || '' });
+        await addAuditLog(asset.id, '送修', formData.description || '送修', operatorName);
         toast('已标记为维修中');
         setModal(null);
         setFormData({});
@@ -52,8 +56,8 @@ export default function AssetDetail() {
     const handleTransfer = async () => {
         if (!formData.toUser || !formData.toLocation) return;
         await db.assets.update(asset.id, { assignee: formData.toUser, location: formData.toLocation });
-        await db.transfers.add({ assetId: asset.id, type: '调拨', fromUser: asset.assignee, toUser: formData.toUser, fromLocation: asset.location, toLocation: formData.toLocation, date: new Date().toISOString().slice(0, 10), operator: '系统管理员', notes: formData.notes || '' });
-        await addAuditLog(asset.id, '调拨', `从${asset.assignee}调拨至${formData.toUser}，${formData.toLocation}`);
+        await db.transfers.add({ assetId: asset.id, type: '调拨', fromUser: asset.assignee, toUser: formData.toUser, fromLocation: asset.location, toLocation: formData.toLocation, date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.notes || '' });
+        await addAuditLog(asset.id, '调拨', `从${asset.assignee}调拨至${formData.toUser}，${formData.toLocation}`, operatorName);
         toast('调拨成功');
         setModal(null);
         setFormData({});
@@ -98,7 +102,7 @@ export default function AssetDetail() {
             fromLocation: asset.location,
             toLocation: restoreLocation,
             date: new Date().toISOString().slice(0, 10),
-            operator: '系统管理员',
+            operator: operatorName,
             notes: formData.notes || '维修完成',
         });
 
@@ -106,6 +110,7 @@ export default function AssetDetail() {
             asset.id,
             '维修完成',
             `维修完成，恢复${restoreStatus}${restoreAssignee ? '，归还给' + restoreAssignee : ''}，位置：${restoreLocation}${formData.cost ? '，费用：¥' + formData.cost : ''}`,
+            operatorName,
         );
         toast('维修完成，资产已恢复');
         setModal(null);
@@ -113,9 +118,9 @@ export default function AssetDetail() {
     };
 
     const handleDispose = async () => {
-        await db.assets.update(asset.id, { status: '已报废', assignee: '', location: '报废仓库', disposalDate: new Date().toISOString().slice(0, 10), disposalReason: formData.reason || '', disposalApprover: '系统管理员' });
-        await db.transfers.add({ assetId: asset.id, type: '报废', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: '报废仓库', date: new Date().toISOString().slice(0, 10), operator: '系统管理员', notes: formData.reason || '' });
-        await addAuditLog(asset.id, '报废', `报废原因：${formData.reason || '无'}`);
+        await db.assets.update(asset.id, { status: '已报废', assignee: '', location: '报废仓库', disposalDate: new Date().toISOString().slice(0, 10), disposalReason: formData.reason || '', disposalApprover: operatorName });
+        await db.transfers.add({ assetId: asset.id, type: '报废', fromUser: asset.assignee, toUser: '', fromLocation: asset.location, toLocation: '报废仓库', date: new Date().toISOString().slice(0, 10), operator: operatorName, notes: formData.reason || '' });
+        await addAuditLog(asset.id, '报废', `报废原因：${formData.reason || '无'}`, operatorName);
         toast('已报废处理', 'warning');
         setModal(null);
         setFormData({});
@@ -158,12 +163,12 @@ export default function AssetDetail() {
                     <span className={`status-badge status-${asset.status}`} style={{ marginLeft: 8 }}>{asset.status}</span>
                 </div>
                 <div className="detail-actions">
-                    {asset.status !== '已报废' && (
+                    {isAdmin && asset.status !== '已报废' && (
                         <button className="btn btn-secondary" onClick={() => navigate(`/assets/${asset.id}/edit`)}>
                             <Edit size={14} /> 编辑
                         </button>
                     )}
-                    {actionButtons.map((b, i) => (
+                    {isAdmin && actionButtons.map((b, i) => (
                         <button key={i} className="btn btn-secondary" style={{ color: b.color }} onClick={b.action}>
                             <b.icon size={14} /> {b.label}
                         </button>
