@@ -37,7 +37,14 @@ export default function AssetForm() {
 
     useEffect(() => {
         if (existing) {
-            setForm({ ...existing, purchasePrice: String(existing.purchasePrice || '') });
+            setForm({
+                ...existing,
+                purchasePrice: String(existing.purchasePrice || ''),
+                // MySQL DATE fields may come back as ISO strings like "2024-01-01T16:00:00.000Z".
+                // We strip to first 10 chars (YYYY-MM-DD) so <input type="date"> can read them.
+                purchaseDate: existing.purchaseDate ? String(existing.purchaseDate).slice(0, 10) : '',
+                warrantyExpiry: existing.warrantyExpiry ? String(existing.warrantyExpiry).slice(0, 10) : '',
+            });
         }
     }, [existing]);
 

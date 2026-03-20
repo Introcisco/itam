@@ -85,3 +85,4 @@ export async function addAuditLog(assetId, action, details, operator = '系统�
         timestamp: new Date().toISOString()
     });
 }
+export const db = api;

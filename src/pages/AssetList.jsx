@@ -172,8 +172,12 @@ export default function AssetList() {
             '资产编码': a.assetCode, '名称': a.name, '分类': a.category,
             '品牌': a.brand, '型号': a.model, '存货号': a.serialNumber,
             '状态': a.status, '位置': a.location, '使用人': a.assignee,
-            '所属公司': a.company, '采购日期': a.purchaseDate, '采购价格': a.purchasePrice,
-            '供应商': a.supplier, '保修截止': a.warrantyExpiry, '配置': a.specs,
+            '所属公司': a.company,
+            '采购日期': a.purchaseDate ? String(a.purchaseDate).slice(0, 10) : '',
+            '采购价格': Number(a.purchasePrice) || 0,
+            '供应商': a.supplier,
+            '保修截止': a.warrantyExpiry ? String(a.warrantyExpiry).slice(0, 10) : '',
+            '配置': a.specs,
         }));
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
@@ -311,7 +315,7 @@ export default function AssetList() {
                                     <td>{asset.location}</td>
                                     <td>{asset.assignee || '-'}</td>
                                     <td>{asset.company || '-'}</td>
-                                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{asset.purchaseDate}</td>
+                                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{asset.purchaseDate ? String(asset.purchaseDate).slice(0, 10) : '—'}</td>
                                 </tr>
                             ))}
                             {paged.length === 0 && (

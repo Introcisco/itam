@@ -25,7 +25,7 @@ export default function Dashboard() {
     const inStock = assets.filter(a => a.status === '库存').length;
     const repairing = assets.filter(a => a.status === '维修中').length;
     const disposed = assets.filter(a => a.status === '已报废').length;
-    const totalValue = assets.reduce((s, a) => s + (a.purchasePrice || 0), 0);
+    const totalValue = assets.reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0);
 
     // Warranty expiring soon (within 90 days)
     const now = new Date();
@@ -94,7 +94,7 @@ export default function Dashboard() {
                         <div className="stat-desc">所有登记资产采购总额</div>
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                        在用资产: {formatCurrency(assets.filter(a => a.status === '在用').reduce((s, a) => s + (a.purchasePrice || 0), 0))}
+                        在用资产: {formatCurrency(assets.filter(a => a.status === '在用').reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0))}
                     </div>
                 </div>
             </div>

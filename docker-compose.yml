@@ -1,0 +1,70 @@
+
+version: '3'
+services:
+  # Snipe-IT 服务配置
+  snipeit:
+    container_name: snipeit
+    image: snipe/snipe-it:latest  # 使用最新版 Snipe-IT 镜像
+    restart: always  # 总是在容器退出时重启
+    ports:
+      - "8000:80"  # 映射容器端口 80 到主机端口 8000
+    volumes:
+      - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime  # 设置容器时区为上海
+      - /data/snipe_it/logs:/root/snipe_it/logs/  # 映射日志目录到本地logs目录
+      - /data/snipe_it/snipe-vol:/var/lib/snipeit  # 映射 Snipe-IT 数据目录到本地snipe-vol目录
+    depends_on:
+      - mysql  # 依赖于 mysql 服务
+    env_file:
+      - .env.docker  # 使用 .env.docker 文件中的环境变量配置
+    networks:
+      - snipeit-backend  # 使用 snipeit-backend 网络
+   # MySQL 服务配置
+  mysql:
+    image: mysql:8.0  # 使用 MySQL 8.0 镜像
+    container_name: mysql
+    ports:
+      - 3306:3306  # 映射容器端口 3306 到主机端口 3306
+    restart: always  # 总是在容器退出时重启
+    volumes:
+      - /data/mysql/data:/var/lib/mysql  # 映射数据库目录到本地db目录
+      - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime  # 设置容器时区为上海
+    environment:
+      MYSQL_ROOT_PASSWORD: FYD#it6689 #MySQL root 用户密码
+      MYSQL_DATABASE: snipeit_data  # 新建数据库名称
+      MYSQL_USER: snipeit  # 新建用户
+      MYSQL_PASSWORD: FYD#it6689  # 设置用户密码
+    command:
+      - --default-authentication-plugin=mysql_native_password  # 设置 MySQL 默认认证插件为 mysql_native_password
+      - --character-set-server=utf8mb4  # 设置 MySQL 服务器使用 utf8mb4 字符集
+      - --collation-server=utf8mb4_unicode_ci  # 设置 MySQL 服务器的字符校对规则为 utf8mb4_unicode_ci
+    networks:
+      - snipeit-backend  # 使用 snipeit-backend 网络
+
+  # ================= 新增 ITAM Node 后端配置 =================
+  itam-backend:
+    container_name: itam-backend
+    # 这里填写你服务器商实际用来跑当前 node 代码的镜像名字
+    # 如果你是把代码挂载进去直接跑的，可以保持这种写法：
+    image: node:22-alpine
+    restart: always
+    ports:
+      - "3001:3001"        # 将后端的 3001 端口暴露出来，供前端 80 端口的反向代理调用
+    working_dir: /app/server
+    volumes:
+      # 把前面的 ./server 换成绝对路径 /data/itam/server
+      - /data/itam/server:/app/server
+      - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime
+    command: npm run start # 或者 node server.js
+    depends_on:
+      - mysql              # 等待 MySQL 启动
+    networks:
+      - snipeit-backend    # 关键！加入同一个网络，打通内部 DNS
+    environment:
+      - DB_HOST=mysql      # 同步网段后，直接通过服务名 mysql 进行连接
+      - DB_USER=root
+      - DB_PASSWORD=FYD#it6689 # 借用你在上面 MySQL 设置的 root 密码
+      - DB_NAME=itam_db
+      - PORT=3001
+
+networks:
+  snipeit-backend:  # Snipe-IT 和 MySQL 服务共用的网络

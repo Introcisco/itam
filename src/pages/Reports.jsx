@@ -26,7 +26,7 @@ export default function Reports() {
         name: c.length > 4 ? c.slice(0, 4) : c,
         fullName: c,
         count: assets.filter(a => a.category === c && a.status !== '已报废').length,
-        value: assets.filter(a => a.category === c && a.status !== '已报废').reduce((s, a) => s + (a.purchasePrice || 0), 0),
+        value: assets.filter(a => a.category === c && a.status !== '已报废').reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0),
     })).filter(d => d.count > 0);
 
     // Monthly trends
@@ -46,10 +46,10 @@ export default function Reports() {
 
     // Status value
     const statusValue = [
-        { name: '在用', value: assets.filter(a => a.status === '在用').reduce((s, a) => s + (a.purchasePrice || 0), 0) },
-        { name: '库存', value: assets.filter(a => a.status === '库存').reduce((s, a) => s + (a.purchasePrice || 0), 0) },
-        { name: '维修中', value: assets.filter(a => a.status === '维修中').reduce((s, a) => s + (a.purchasePrice || 0), 0) },
-        { name: '已报废', value: assets.filter(a => a.status === '已报废').reduce((s, a) => s + (a.purchasePrice || 0), 0) },
+        { name: '在用', value: assets.filter(a => a.status === '在用').reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0) },
+        { name: '库存', value: assets.filter(a => a.status === '库存').reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0) },
+        { name: '维修中', value: assets.filter(a => a.status === '维修中').reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0) },
+        { name: '已报废', value: assets.filter(a => a.status === '已报废').reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0) },
     ].filter(d => d.value > 0);
     const STATUS_COLORS = { '在用': '#3b82f6', '库存': '#00d4aa', '维修中': '#f59e0b', '已报废': '#ef4444' };
 
@@ -62,12 +62,15 @@ export default function Reports() {
             '库存数量': assets.filter(a => a.status === '库存').length,
             '维修数量': assets.filter(a => a.status === '维修中').length,
             '报废数量': assets.filter(a => a.status === '已报废').length,
-            '总价值': assets.reduce((s, a) => s + (a.purchasePrice || 0), 0),
+            '总价值': assets.reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0),
         }];
         const detailData = assets.map(a => ({
             '编码': a.assetCode, '名称': a.name, '分类': a.category, '品牌': a.brand,
-            '型号': a.model, '状态': a.status, '价格': a.purchasePrice, '位置': a.location,
-            '使用人': a.assignee, '采购日期': a.purchaseDate, '保修截止': a.warrantyExpiry,
+            '型号': a.model, '状态': a.status,
+            '价格': Number(a.purchasePrice) || 0, '位置': a.location,
+            '使用人': a.assignee,
+            '采购日期': a.purchaseDate ? String(a.purchaseDate).slice(0, 10) : '',
+            '保修截止': a.warrantyExpiry ? String(a.warrantyExpiry).slice(0, 10) : '',
         }));
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryData), '资产概要');
@@ -94,15 +97,15 @@ export default function Reports() {
             <div className="dashboard-stats stagger" style={{ marginBottom: 24 }}>
                 <div className="stat-card" style={{ '--card-accent': '#a855f7' }}>
                     <div className="stat-label">资产总价值</div>
-                    <div className="stat-value" style={{ fontSize: 24, color: '#a855f7' }}>¥{assets.reduce((s, a) => s + (a.purchasePrice || 0), 0).toLocaleString()}</div>
+                    <div className="stat-value" style={{ fontSize: 24, color: '#a855f7' }}>¥{assets.reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0).toLocaleString()}</div>
                 </div>
                 <div className="stat-card" style={{ '--card-accent': '#3b82f6' }}>
                     <div className="stat-label">在用资产价值</div>
-                    <div className="stat-value" style={{ fontSize: 24, color: '#3b82f6' }}>¥{assets.filter(a => a.status === '在用').reduce((s, a) => s + (a.purchasePrice || 0), 0).toLocaleString()}</div>
+                    <div className="stat-value" style={{ fontSize: 24, color: '#3b82f6' }}>¥{assets.filter(a => a.status === '在用').reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0).toLocaleString()}</div>
                 </div>
                 <div className="stat-card" style={{ '--card-accent': '#00d4aa' }}>
                     <div className="stat-label">平均资产价值</div>
-                    <div className="stat-value" style={{ fontSize: 24, color: '#00d4aa' }}>¥{assets.length ? Math.round(assets.reduce((s, a) => s + (a.purchasePrice || 0), 0) / assets.length).toLocaleString() : 0}</div>
+                    <div className="stat-value" style={{ fontSize: 24, color: '#00d4aa' }}>¥{assets.length ? Math.round(assets.reduce((s, a) => s + (Number(a.purchasePrice) || 0), 0) / assets.length).toLocaleString() : 0}</div>
                 </div>
                 <div className="stat-card" style={{ '--card-accent': '#f59e0b' }}>
                     <div className="stat-label">流转次数</div>

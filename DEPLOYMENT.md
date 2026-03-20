@@ -31,7 +31,7 @@
    DB_NAME=itam_db
    PORT=3001
    ```
-   *注意：如果你的数据库账户具备创建数据库的权限，代码会自动创建 `itam_db` 数据库和相关表。*
+   *注意：如果你的数据库账户具备创建数据库的权限，代码会自动创建 `itam_db` 数据库和相关表。为保障安全，初次部署时系统将自动生成带有 bcrypt 哈希加密的默认账号（如：admin）。*
 
 3. **使用 PM2 在后台运行后端服务**
    为了防止关闭终端后服务停止，建议使用 PM2 守护进程管理工具。
@@ -46,6 +46,26 @@
    pm2 save
    pm2 startup
    ```
+
+### （推荐）使用 Docker Compose 部署后端
+如果你的服务器已经使用了 Docker 环境，推荐直接通过 `docker-compose` 将应用作为服务启动，与 MySQL 容器编排在同一私有网络中：
+```yaml
+  itam-backend:
+    image: node:22-alpine
+    restart: always
+    ports:
+      - "3001:3001"
+    working_dir: /app/server
+    volumes:
+      - ./server:/app/server
+    command: npm run start
+    environment:
+      - DB_HOST=mysql # 连接同一网络下的 MySQL 容器名
+      - DB_USER=root
+      - DB_PASSWORD=你的真实数据库密码
+      - DB_NAME=itam_db
+      - PORT=3001
+```
 
 ## 3. 部署前端应用
 

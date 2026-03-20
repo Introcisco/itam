@@ -213,10 +213,10 @@ export default function AssetDetail() {
                     <div className="info-card">
                         <div className="info-title">采购信息</div>
                         <div className="info-row"><span className="info-label">所属公司</span><span className="info-value">{asset.company || '-'}</span></div>
-                        <div className="info-row"><span className="info-label">采购日期</span><span className="info-value mono">{asset.purchaseDate}</span></div>
+                        <div className="info-row"><span className="info-label">采购日期</span><span className="info-value mono">{asset.purchaseDate ? String(asset.purchaseDate).slice(0, 10) : '—'}</span></div>
                         <div className="info-row"><span className="info-label">采购价格</span><span className="info-value mono">¥{(asset.purchasePrice || 0).toLocaleString()}</span></div>
                         <div className="info-row"><span className="info-label">供应商</span><span className="info-value">{asset.supplier}</span></div>
-                        <div className="info-row"><span className="info-label">保修截止</span><span className="info-value mono">{asset.warrantyExpiry}</span></div>
+                        <div className="info-row"><span className="info-label">保修截止</span><span className="info-value mono">{asset.warrantyExpiry ? String(asset.warrantyExpiry).slice(0, 10) : '—'}</span></div>
                     </div>
                     <div className="info-card">
                         <div className="info-title">使用信息</div>

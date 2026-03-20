@@ -44,8 +44,8 @@ export default function DisposalList() {
                                 <td style={{ fontWeight: 500 }}>{a.name}</td>
                                 <td>{a.category}</td>
                                 <td>{a.brand} {a.model}</td>
-                                <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>¥{(a.purchasePrice || 0).toLocaleString()}</td>
-                                <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{a.purchaseDate}</td>
+                                <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>¥{(Number(a.purchasePrice) || 0).toLocaleString()}</td>
+                                <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{a.purchaseDate ? String(a.purchaseDate).slice(0, 10) : '—'}</td>
                                 <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{a.disposalDate || '-'}</td>
                                 <td>{a.disposalReason || '-'}</td>
                                 <td>{a.disposalApprover || '-'}</td>

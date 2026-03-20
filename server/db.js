@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
@@ -85,9 +86,38 @@ export async function initDb() {
         timestamp DATETIME,
         FOREIGN KEY (assetId) REFERENCES assets(id) ON DELETE CASCADE
       );
+
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        role VARCHAR(20) DEFAULT 'user',
+        displayName VARCHAR(100),
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
     `;
 
     await initPool.query(schema);
+
+    // Seed default users if the table is empty
+    const [userRows] = await initPool.query('SELECT COUNT(*) as count FROM users');
+    if (userRows[0].count === 0) {
+      const defaultPassword = '4eP8@C8fq';
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+      
+      const values = [
+        ['admin', hashedPassword, 'admin', '系统管理员'],
+        ['user', hashedPassword, 'user', '普通用户']
+      ];
+      
+      await initPool.query(
+        'INSERT INTO users (username, password_hash, role, displayName) VALUES ?',
+        [values]
+      );
+      console.log('Default users (admin, user) created.');
+    }
+
     await initPool.end();
     console.log('Database and tables initialized.');
   } catch (error) {
