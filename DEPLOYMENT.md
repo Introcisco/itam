@@ -47,23 +47,6 @@
    pm2 startup
    ```
 
-### （推荐）使用 Docker Compose 部署后端
-如果你的服务器已经使用了 Docker 环境，推荐直接通过 `docker-compose` 将应用作为服务启动。
-
-> **⚠️ 重要安全更新**：出于安全考虑，项目中去除了 `docker-compose.yml` 中的明文密码。
-
-在运行容器前，请务必在你的服务器端，与 `docker-compose.yml` 同级的目录下，创建一个名为 `.env.docker` 的文件，并写入以下密码变量：
-
-```env
-MYSQL_ROOT_PASSWORD=你的数据库root密码
-MYSQL_PASSWORD=你的数据库用户密码
-DB_PASSWORD=你的数据库用户密码
-```
-
-然后，你可以正常使用如下命令启动并让它与 MySQL 容器编排在同一私有网络中：
-```bash
-docker-compose up -d
-```
 
 ## 3. 部署前端应用
 

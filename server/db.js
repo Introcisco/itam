@@ -102,7 +102,17 @@ export async function initDb() {
     // Seed default users if the table is empty
     const [userRows] = await initPool.query('SELECT COUNT(*) as count FROM users');
     if (userRows[0].count === 0) {
-      const defaultPassword = process.env.INIT_ADMIN_PASSWORD || 'admin123';
+      let defaultPassword = process.env.INIT_ADMIN_PASSWORD;
+      if (!defaultPassword) {
+        // Generate a random password if none is provided
+        defaultPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+        console.warn('==================================================');
+        console.warn('⚠️ WARNING: No INIT_ADMIN_PASSWORD provided.');
+        console.warn(`🔑 Generated default admin password: ${defaultPassword}`);
+        console.warn('⚠️ Please save this password and change it later.');
+        console.warn('==================================================');
+      }
+
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(defaultPassword, salt);
       

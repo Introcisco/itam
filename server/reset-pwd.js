@@ -21,7 +21,7 @@ async function run() {
     if (result.affectedRows === 0) {
       console.log(`⚠️ 重置失败：数据库中不存在名为 "${username}" 的用户。`);
     } else {
-      console.log(`✅ 成功！用户 "${username}" 的密码已修改为: ${newPassword}`);
+      console.log(`✅ 成功！用户 "${username}" 的密码已成功修改。`);
     }
   } catch (err) {
     console.error('❌ 重置发生系统错误:', err.message);
